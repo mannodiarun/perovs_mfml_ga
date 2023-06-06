@@ -12,7 +12,7 @@
 #+exclude_tags: noexport
 #+creator: Emacs 28.2 (Org mode 9.6.5)
 #+cite_export:
-#+PROPERTY: header-args:jupyter-python :session mfmlga :kernel mrg :pandoc org :async yes
+#+PROPERTY: header-args:jupyter-python :session mfmlga :kernel mfmlga :pandoc org :async yes
 #+PROPERTY: header-args :results scalar drawer :eval never-export :exports results
 * COMMENT dependencies
 ** feature extraction
@@ -28,8 +28,6 @@
 #+begin_src jupyter-python
   import sys, os
   sys.path.append(os.path.expanduser("~/src/cmcl"))
-  sys.path.append(os.path.expanduser("~/src/yogi"))
-  sys.path.append(os.path.expanduser("~/src/spyglass"))
 #+end_src
 
 #+RESULTS:
@@ -56,14 +54,13 @@
 
 ** plotting
 #+begin_src jupyter-python
-  import matplotlib.pyplot as plt
-  plt.rc("figure", facecolor='w')
   import plotly.express as px
   import plotly.io as pio
   import plotly.graph_objects as go
 
   import re
   from plotly.subplots import make_subplots
+  import plotly.figure_factory as ff
 
   pub_template = go.layout.Template()
   pub_template.data = pio.templates['simple_white'].data
@@ -91,6 +88,25 @@
 :end:
 
 * plot binary composition vs bg 
+* ternary axis formatting
+#+begin_src jupyter-python
+  def makeAxis(title, tickangle):
+    return dict(
+      title= title,
+      titlefont=dict(size=20),
+      tickangle= tickangle,
+      tickfont=dict(size=15),
+      tickcolor='rgba(0,0,0,0)',
+      ticklen=5,
+      showline=True,
+      showgrid=True
+    )
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
 * plot ternary composition vs bg
 #+begin_src jupyter-python
   df = prd[prd.Cubic == 1]
@@ -110,13 +126,6 @@
 
 #+begin_src jupyter-python
   comp = X[(X.MA == 1) & (X.Pb == 1)]
-#+end_src
-
-#+RESULTS:
-:results:
-:end:
-
-#+begin_src jupyter-python
   pdf = pd.merge(left=comp.reset_index(), right=df.reset_index(), on='Index')
 #+end_src
 
@@ -124,11 +133,74 @@
 :results:
 :end:
 
+** figure factory
+#+begin_src jupyter-python :file ./tern_X-site_TrueContour.png
+  p = ff.create_ternary_contour(
+      pdf[["Br", "Cl", "I"]].fillna(0).to_numpy().T/3,
+      pdf["ML_gap_mean"],
+      pole_labels=["Br", "Cl", "I"],
+      interp_mode='cartesian',
+      showscale=True,
+      colorscale='Viridis',
+      title = "MAPbX_3 bg vs X-mix"
+  )
+  # p.update_layout(margin=dict(l=30,r=100,t=70,b=0))
+  p.show(renderer='png')
+#+end_src
+
+#+RESULTS:
+:results:
+[[file:./tern_X-site_TrueContour.png]]
+:end:
+
+** manual config
 #+begin_src jupyter-python :file ./tern_X-site.png
-  p = px.scatter_ternary(
-      pdf, a="Br", b="Cl", c="I",
-      color='ML_gap_mean',
-      title="MAPbX_3 bg vs X-mix")
+  a="Br"; b="Cl"; c="I"
+  title = "MAPbX_3 bg vs X-mix"
+
+  traces = go.Scatterternary(dict(
+      a = pdf[a],
+      b = pdf[b],
+      c = pdf[c],
+      mode = 'markers',
+      marker=dict(
+          symbol='diamond',
+          color=pdf['ML_gap_mean'],
+          colorscale='Viridis',
+          size=17,
+          line=dict(
+              width=0, 
+          ),
+          colorbar=dict(
+              title='band gap [eV]',
+              titleside='right',
+              titlefont=dict(size=14),
+              len=0.75,
+              y=0.5
+          ),
+      ),
+  ))
+
+  layout = dict(
+      ternary=dict(
+          sum=3,
+          aaxis=makeAxis(a, 0),
+          baxis=makeAxis('<br>'+b, 45),
+          caxis=makeAxis('<br>'+c, -45)
+      ),
+      coloraxis=dict(showscale=True),
+      annotations=(
+          dict(
+              showarrow=False,
+              text=title,
+              x=0.5,
+              y=1.3,
+              font=dict(size=15),
+          ),
+      )
+  )
+
+  p = go.Figure(data=traces, layout=layout)
   p.show(renderer='png')
 #+end_src
 
