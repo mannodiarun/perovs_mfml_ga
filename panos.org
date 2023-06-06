@@ -1,0 +1,139 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+options: author:t broken-links:nil c:nil creator:nil
+#+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
+#+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+#+options: timestamp:t title:t toc:t todo:t |:t
+#+title: panos
+#+date: <2023-06-05 Mon>
+#+author: Panayotis Manganaris
+#+email: panos.manganaris@gmail.com
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 28.2 (Org mode 9.6.5)
+#+cite_export:
+#+PROPERTY: header-args:jupyter-python :session mfmlga :kernel mrg :pandoc org :async yes
+#+PROPERTY: header-args :results scalar drawer :eval never-export :exports results
+* COMMENT dependencies
+** feature extraction
+#+begin_src jupyter-python
+  %load_ext autoreload
+  %autoreload 2
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+#+begin_src jupyter-python
+  import sys, os
+  sys.path.append(os.path.expanduser("~/src/cmcl"))
+  sys.path.append(os.path.expanduser("~/src/yogi"))
+  sys.path.append(os.path.expanduser("~/src/spyglass"))
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+#+begin_src jupyter-python
+  import cmcl
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+** data
+#+begin_src jupyter-python
+  import pandas as pd
+  import numpy as np
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+** plotting
+#+begin_src jupyter-python
+  import matplotlib.pyplot as plt
+  plt.rc("figure", facecolor='w')
+  import plotly.express as px
+  import plotly.io as pio
+  import plotly.graph_objects as go
+
+  import re
+  from plotly.subplots import make_subplots
+
+  pub_template = go.layout.Template()
+  pub_template.data = pio.templates['simple_white'].data
+  pub_template.layout = pio.templates['simple_white'].layout
+  pub_template.layout.font = dict(family='arial narrow', size=15)
+
+  pio.templates.default = pub_template
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+* load data
+#+begin_src jupyter-python
+  # ftd = pd.read_excel("./Out_pred_to_plot.xlsx", index_col=0)
+#+end_src
+ 
+#+begin_src jupyter-python
+  prd = pd.read_excel("./Out_pred_to_plot.xlsx", index_col=0).dropna(axis=1, how='all')
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+* plot binary composition vs bg 
+* plot ternary composition vs bg
+#+begin_src jupyter-python
+  df = prd[prd.Cubic == 1]
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+  
+#+begin_src jupyter-python
+  X = df.ft.comp()
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+#+begin_src jupyter-python
+  comp = X[(X.MA == 1) & (X.Pb == 1)]
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+#+begin_src jupyter-python
+  pdf = pd.merge(left=comp.reset_index(), right=df.reset_index(), on='Index')
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+#+begin_src jupyter-python :file ./tern_X-site.png
+  p = px.scatter_ternary(
+      pdf, a="Br", b="Cl", c="I",
+      color='ML_gap_mean',
+      title="MAPbX_3 bg vs X-mix")
+  p.show(renderer='png')
+#+end_src
+
+#+RESULTS:
+:results:
+[[file:./tern_X-site.png]]
+:end:
+
